@@ -1,0 +1,24 @@
+[project]
+name = "cp"
+version = "0.1.0"
+description = "Medical Image Processing System with OCR and Report Generation"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb>=1.3.5",
+    "fastapi>=0.122.0",
+    "groq>=0.36.0",
+    "jinja2>=3.1.2",
+    "mistralai>=1.9.11",
+    "opencv-python>=4.12.0.88",
+    "pillow>=10.0.0",
+    "pydantic>=2.12.4",
+    "pydantic-settings>=2.12.0",
+    "pymongo>=4.15.4",
+    "python-dotenv>=1.0.0",
+    "python-multipart>=0.0.20",
+    "sentence-transformers>=5.1.2",
+    "tqdm>=4.67.1",
+    "uvicorn[standard]>=0.38.0",
+    "weasyprint>=66.0",
+]
