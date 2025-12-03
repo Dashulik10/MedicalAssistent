@@ -12,7 +12,7 @@ from groq import Groq
 
 from configuration.settings import settings
 
-from .prompts import get_extraction_prompt
+from .prompts import get_extraction_prompt, get_classification_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +41,39 @@ class GroqExtractor:
         Raises:
             ValueError: If extraction fails after retry.
         """
-        logger.info("Extracting data from image")
+        logger.info("Starting extraction process")
 
-        # Encode image to base64
+        # Encode image to base64 once
         base64_image = self._encode_image(image)
 
-        # Get extraction prompt
-        prompt = get_extraction_prompt()
+        # Step 1: Classify the test type
+        test_type = self._classify_test_type(base64_image)
+        logger.info(f"Detected test type: {test_type}")
 
-        # Prepare messages for Groq API
+        # Step 2: Extract data with appropriate prompt
+        result = self._extract_with_type(base64_image, test_type)
+        logger.info("Data extracted successfully")
+
+        return result
+
+    def _classify_test_type(self, base64_image: str) -> str:
+        """
+        Classify the type of medical test from the image.
+
+        Args:
+            base64_image: Base64 encoded image string.
+
+        Returns:
+            str: Test type - "blood_count", "biochemistry", or "other".
+
+        Raises:
+            ValueError: If classification fails.
+        """
+        logger.info("Classifying test type")
+
+        # Get classification prompt
+        prompt = get_classification_prompt()
+
         messages = [
             {
                 "role": "user",
@@ -65,7 +89,74 @@ class GroqExtractor:
             }
         ]
 
-        # Try to get completion with one retry
+        max_attempts = 2
+        for attempt in range(max_attempts):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=0.0,  # Use 0 for classification for consistency
+                    max_tokens=50,  # We only need a short response
+                )
+                result = response.choices[0].message.content.strip().lower()
+
+                # Validate and normalize the result
+                if "blood" in result or "cbc" in result or "hemoglobin" in result:
+                    return "blood_count"
+                elif (
+                    "biochem" in result or "glucose" in result or "creatinine" in result
+                ):
+                    return "biochemistry"
+                else:
+                    return "other"
+
+            except Exception as e:
+                logger.error(
+                    f"Classification failed (attempt {attempt + 1}/{max_attempts}): {e}"
+                )
+                if attempt < max_attempts - 1:
+                    logger.info("Retrying classification in 1 second...")
+                    time.sleep(1)
+                else:
+                    logger.warning(
+                        f"Failed to classify test type, defaulting to 'other': {e}"
+                    )
+                    return "other"
+
+    def _extract_with_type(self, base64_image: str, test_type: str) -> str:
+        """
+        Extract data using the appropriate prompt for the test type.
+
+        Args:
+            base64_image: Base64 encoded image string.
+            test_type: Type of test detected.
+
+        Returns:
+            str: Raw text response from the API.
+
+        Raises:
+            ValueError: If extraction fails after retry.
+        """
+        logger.info(f"Extracting data for test type: {test_type}")
+
+        # Get specialized extraction prompt
+        prompt = get_extraction_prompt(test_type=test_type)
+
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_image}",
+                        },
+                    },
+                ],
+            }
+        ]
+
         max_attempts = 2
         for attempt in range(max_attempts):
             try:
@@ -75,16 +166,14 @@ class GroqExtractor:
                     temperature=self.temperature,
                     max_tokens=self.max_tokens,
                 )
-                result = response.choices[0].message.content
-                logger.info("Data extracted successfully")
-                return result
+                return response.choices[0].message.content
 
             except Exception as e:
                 logger.error(
-                    f"API call failed (attempt {attempt + 1}/{max_attempts}): {e}"
+                    f"Extraction failed (attempt {attempt + 1}/{max_attempts}): {e}"
                 )
                 if attempt < max_attempts - 1:
-                    logger.info("Retrying in 2 seconds...")
+                    logger.info("Retrying extraction in 2 seconds...")
                     time.sleep(2)
                 else:
                     raise ValueError(

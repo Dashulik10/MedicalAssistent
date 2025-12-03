@@ -1,7 +1,7 @@
 """Prompts for medical data extraction."""
 
 
-def get_extraction_prompt(test_type: str = "auto") -> str:
+def get_extraction_prompt(test_type: str = "other") -> str:
     """
     Get the prompt for extracting medical data from document images.
 
@@ -206,7 +206,7 @@ Be thorough and extract all visible parameters, patient information, and dates."
             + closing
         )
 
-    # auto or other
+    # other
     return (
         base_instructions
         + blood_count_details
@@ -216,3 +216,32 @@ Be thorough and extract all visible parameters, patient information, and dates."
         + example
         + closing
     )
+
+
+def get_classification_prompt() -> str:
+    """
+    Get the prompt for classifying the type of medical test.
+
+    Returns:
+        str: The classification prompt.
+    """
+    return """You are a medical document classifier. Analyze this laboratory report image and determine the type of test.
+
+Look for these indicators:
+
+BLOOD COUNT (CBC):
+- Parameters like: Hemoglobin, RBC, WBC, Platelets, Hematocrit, MCV, MCH, MCHC
+- Differential counts: Neutrophils, Lymphocytes, Monocytes, Eosinophils, Basophils
+- Keywords: "Complete Blood Count", "CBC", "Hemogram"
+
+BIOCHEMISTRY:
+- Parameters like: Glucose, Creatinine, Urea, BUN, Uric Acid, Electrolytes (Na, K, Cl)
+- Liver function: SGOT, SGPT, Bilirubin, Alkaline Phosphatase, Total Protein, Albumin
+- Keywords: "Biochemistry", "Chemistry Panel", "Metabolic Panel"
+
+Respond with ONLY ONE WORD:
+- "blood_count" if it's a CBC/blood count test
+- "biochemistry" if it's a biochemistry/chemistry test
+- "other" if it's neither or unclear
+
+Your response:"""
