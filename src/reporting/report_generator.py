@@ -1,5 +1,3 @@
-"""Генератор markdown отчётов на основе LLM ответа."""
-
 import logging
 from datetime import datetime
 from typing import Optional
@@ -10,14 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class ReportGenerator:
-    """Генерирует структурированный markdown отчёт на основе LLM ответа."""
-
     def __init__(self, clinic_name: Optional[str] = None):
-        """
-        Инициализация генератора.
-
-        :param clinic_name: название поликлиники
-        """
         self.clinic_name = clinic_name or settings.clinic_name
         logger.info(f"ReportGenerator инициализирован: клиника={self.clinic_name}")
 
@@ -27,14 +18,6 @@ class ReportGenerator:
         patient_name: Optional[str] = None,
         patient_id: Optional[int] = None,
     ) -> str:
-        """
-        Генерирует markdown отчёт на основе ответа LLM.
-
-        :param llm_response: ответ от LLM (markdown форматированный)
-        :param patient_name: имя пациента
-        :param patient_id: ID пациента
-        :return: полный markdown отчёт
-        """
         sections = []
 
         # Заголовок с названием поликлиники
@@ -53,7 +36,6 @@ class ReportGenerator:
     def _generate_header(
         self, patient_name: Optional[str], patient_id: Optional[int]
     ) -> str:
-        """Генерирует заголовок отчёта с названием поликлиники."""
         lines = [
             f"# {self.clinic_name}",
             "",
@@ -69,7 +51,6 @@ class ReportGenerator:
         return "\n".join(lines)
 
     def _generate_footer(self) -> str:
-        """Генерирует футер отчёта с датой создания."""
         current_date = datetime.now().strftime("%d.%m.%Y %H:%M")
         lines = [
             "---",

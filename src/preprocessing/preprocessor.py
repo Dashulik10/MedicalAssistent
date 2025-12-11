@@ -57,17 +57,6 @@ ImageInput = Union[np.ndarray, bytes, BytesIO]
 # - "balanced" - универсальный
 # - "gentle" - для хороших изображений
 class MedicalImagePreprocessor:
-    """
-    Продвинутый препроцессор медицинских отчетов.
-
-    Использует state-of-the-art методы для максимальной читаемости текста:
-    - CLAHE для адаптивного контраста
-    - Билатеральная фильтрация для удаления шума
-    - Адаптивная бинаризация
-    - Морфологические операции
-    - Deskewing (выравнивание наклона)
-    """
-
     def __init__(self, config: Optional[PreprocessingConfig] = None):
         self.config = config or PreprocessingConfig()
         self.logger = logging.getLogger(__name__)
@@ -77,16 +66,6 @@ class MedicalImagePreprocessor:
         image_input: ImageInput,
         save_path: Optional[str] = None,
     ) -> np.ndarray:
-        """
-        Предобработка медицинского отчета - ОПТИМИЗИРОВАНО ДЛЯ LLM.
-
-        Args:
-            image_input: Изображение в виде numpy array, bytes или BytesIO
-            save_path: Путь для сохранения (опционально)
-
-        Returns:
-            Обработанное изображение (RGB numpy array)
-        """
         try:
             # 1. Загрузка изображения
             image = self._load_image(image_input)
@@ -136,20 +115,17 @@ class MedicalImagePreprocessor:
             raise
 
     def _load_image(self, image_input: ImageInput) -> np.ndarray:
-        """Загрузка изображения из bytes, BytesIO или ndarray"""
         if isinstance(image_input, np.ndarray):
             image = image_input.copy()
             if len(image.shape) == 2:
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
         elif isinstance(image_input, bytes):
-            # Decode bytes to numpy array
             nparr = np.frombuffer(image_input, np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if image is None:
                 raise ValueError("Не удалось декодировать изображение из bytes")
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         elif isinstance(image_input, BytesIO):
-            # Read from BytesIO and decode
             image_bytes = image_input.read()
             nparr = np.frombuffer(image_bytes, np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -165,7 +141,6 @@ class MedicalImagePreprocessor:
         return image
 
     def _resize_image(self, image: np.ndarray) -> np.ndarray:
-        """Изменение размера с сохранением пропорций"""
         h, w = image.shape[:2]
 
         if max(h, w) > self.config.max_dimension:
@@ -177,9 +152,6 @@ class MedicalImagePreprocessor:
         return image
 
     def _fix_inversion(self, gray: np.ndarray) -> np.ndarray:
-        """
-        Исправление инверсии цветов.
-        """
         h, w = gray.shape
         corner_size = min(h, w) // 10
 
@@ -198,12 +170,6 @@ class MedicalImagePreprocessor:
         return gray
 
     def _remove_background(self, gray: np.ndarray) -> np.ndarray:
-        """
-        Улучшенное удаление фона и выравнивание освещения.
-
-        Использует более мягкий подход для медицинских документов.
-        """
-        # Оценка фона с помощью сильного размытия
         kernel_size = max(gray.shape) // self.config.background_kernel_divisor
         if kernel_size % 2 == 0:
             kernel_size += 1
@@ -227,11 +193,6 @@ class MedicalImagePreprocessor:
         return result
 
     def _bilateral_filter(self, gray: np.ndarray) -> np.ndarray:
-        """
-        Билатеральная фильтрация - удаляет шум, сохраняя края.
-
-        Идеально для текста: шум удаляется, края букв остаются четкими.
-        """
         filtered = cv2.bilateralFilter(
             gray,
             d=self.config.bilateral_d,
@@ -241,12 +202,6 @@ class MedicalImagePreprocessor:
         return filtered
 
     def _apply_clahe(self, gray: np.ndarray) -> np.ndarray:
-        """
-        CLAHE - Contrast Limited Adaptive Histogram Equalization.
-
-        Лучше обычного увеличения контраста, так как работает адаптивно
-        для разных областей изображения.
-        """
         clahe = cv2.createCLAHE(
             clipLimit=self.config.clahe_clip_limit,
             tileGridSize=(self.config.clahe_tile_size, self.config.clahe_tile_size),
@@ -255,9 +210,6 @@ class MedicalImagePreprocessor:
         return enhanced
 
     def _sharpen_advanced(self, gray: np.ndarray) -> np.ndarray:
-        """
-        Продвинутое повышение резкости с использованием kernel convolution.
-        """
         # Применяем kernel для резкости
         sharpened = cv2.filter2D(gray, -1, self.config.sharpen_kernel)
 
@@ -271,9 +223,6 @@ class MedicalImagePreprocessor:
         return result
 
     def _sharpen_light(self, gray: np.ndarray) -> np.ndarray:
-        """
-        Легкое повышение резкости - более мягкое для сохранения деталей.
-        """
         # Unsharp masking с настраиваемыми параметрами
         blurred = cv2.GaussianBlur(gray, (0, 0), self.config.sharpen_blur_sigma)
         # sharpen_amount контролирует силу эффекта
@@ -283,11 +232,6 @@ class MedicalImagePreprocessor:
         return sharpened
 
     def _enhance_contrast(self, gray: np.ndarray) -> np.ndarray:
-        """
-        Улучшение контраста БЕЗ бинаризации - ОПТИМАЛЬНО ДЛЯ LLM!
-
-        Создает высококонтрастное grayscale изображение с четким текстом.
-        """
         # Гамма-коррекция (опционально)
         if self.config.gamma_correction != 1.0:
             gray = self._apply_gamma(gray, self.config.gamma_correction)
@@ -314,11 +258,6 @@ class MedicalImagePreprocessor:
         return gray
 
     def _apply_gamma(self, gray: np.ndarray, gamma: float) -> np.ndarray:
-        """
-        Гамма-коррекция для настройки яркости.
-        gamma < 1.0: делает изображение светлее
-        gamma > 1.0: делает изображение темнее
-        """
         inv_gamma = 1.0 / gamma
         table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in range(256)]).astype(
             np.uint8
@@ -326,11 +265,6 @@ class MedicalImagePreprocessor:
         return cv2.LUT(gray, table)
 
     def _smart_binarize(self, gray: np.ndarray) -> np.ndarray:
-        """
-        Умная бинаризация БЕЗ черных пятен.
-
-        Использует адаптивную бинаризацию с настраиваемыми параметрами.
-        """
         # Адаптивная бинаризация с настраиваемым размером блока
         binary = cv2.adaptiveThreshold(
             gray,
@@ -348,11 +282,6 @@ class MedicalImagePreprocessor:
         return binary
 
     def _adaptive_threshold(self, gray: np.ndarray) -> np.ndarray:
-        """
-        Адаптивная бинаризация - лучше работает с неравномерным освещением.
-
-        Использует локальные threshold для каждой области.
-        """
         # Адаптивный порог методом Гаусса
         binary = cv2.adaptiveThreshold(
             gray,
@@ -366,12 +295,6 @@ class MedicalImagePreprocessor:
         return binary
 
     def _morphological_operations(self, binary: np.ndarray) -> np.ndarray:
-        """
-        Морфологические операции для улучшения структуры текста.
-
-        - Closing: заполняет небольшие дырки в буквах
-        - Opening: удаляет мелкий шум
-        """
         kernel = cv2.getStructuringElement(
             cv2.MORPH_RECT,
             (self.config.morph_kernel_size, self.config.morph_kernel_size),
@@ -386,11 +309,6 @@ class MedicalImagePreprocessor:
         return opened
 
     def _deskew(self, binary: np.ndarray) -> np.ndarray:
-        """
-        Выравнивание наклона изображения (deskewing).
-
-        Находит угол наклона текста и поворачивает изображение.
-        """
         # Инвертируем для анализа (OpenCV expects white text on black)
         inverted = 255 - binary
 
@@ -427,9 +345,6 @@ class MedicalImagePreprocessor:
         return binary
 
     def _final_cleanup(self, binary: np.ndarray) -> np.ndarray:
-        """
-        Финальная очистка изображения.
-        """
         # Удаление очень мелких компонентов (шум)
         num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
             255 - binary, connectivity=8
@@ -453,7 +368,6 @@ class MedicalImagePreprocessor:
         return result
 
     def _save_image(self, image: np.ndarray, path: str):
-        """Сохранение в высоком качестве"""
         image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         if self.config.output_format.upper() == "PNG":

@@ -1,5 +1,3 @@
-"""Конвертер markdown отчётов в PDF через WeasyPrint."""
-
 import logging
 from io import BytesIO
 from pathlib import Path
@@ -15,14 +13,7 @@ TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 
 class PDFConverter:
-    """Конвертирует markdown отчёты в PDF с использованием WeasyPrint."""
-
     def __init__(self, templates_dir: Optional[Path] = None):
-        """
-        Инициализация конвертера.
-
-        :param templates_dir: путь к директории с шаблонами
-        """
         self.templates_dir = templates_dir or TEMPLATES_DIR
         self.env = Environment(
             loader=FileSystemLoader(str(self.templates_dir)),
@@ -31,11 +22,6 @@ class PDFConverter:
         logger.info(f"PDFConverter инициализирован, шаблоны: {self.templates_dir}")
 
     def markdown_to_html(self, markdown_text: str) -> str:
-        """
-        Преобразует markdown в HTML.
-
-        Простой конвертер без внешних зависимостей.
-        """
         lines = markdown_text.split("\n")
         html_lines = []
         in_table = False
@@ -108,7 +94,6 @@ class PDFConverter:
         return "\n".join(html_lines)
 
     def _process_inline(self, text: str) -> str:
-        """Обрабатывает inline markdown разметку."""
         import re
 
         # Жирный текст **text**
@@ -124,13 +109,6 @@ class PDFConverter:
         markdown_text: str,
         title: str = "Медицинский отчёт",
     ) -> bytes:
-        """
-        Конвертирует markdown отчёт в PDF.
-
-        :param markdown_text: markdown текст отчёта
-        :param title: заголовок документа
-        :return: PDF как bytes
-        """
         try:
             # Преобразуем markdown в HTML
             content_html = self.markdown_to_html(markdown_text)
@@ -163,7 +141,6 @@ class PDFConverter:
             raise RuntimeError(f"Failed to generate PDF: {e}") from e
 
     def _get_default_template(self, title: str, content: str) -> str:
-        """Возвращает HTML шаблон по умолчанию."""
         return f"""
 <!DOCTYPE html>
 <html lang="ru">

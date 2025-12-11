@@ -1,12 +1,4 @@
 def get_preset(name: str):
-    """
-    Готовые наборы параметров для разных случаев
-
-    Использование:
-        from config import get_preset
-        params = get_preset("medical_llm")
-        config = PreprocessingConfig(**params)
-    """
     presets = {
         # ЛУЧШИЙ ВАРИАНТ для медицинских отчетов + LLM (БЕЗ бинаризации!)
         "medical_llm": {
