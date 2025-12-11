@@ -10,10 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class ChromaAdapter:
-    """
-    Адаптер для ChromaDB — хранилища векторов
-    """
-
     def __init__(self, persist_directory: str, collection_name: str):
         self.persist_directory = persist_directory
 
@@ -22,11 +18,9 @@ class ChromaAdapter:
 
             self.collection = self.client.get_or_create_collection(
                 name=collection_name,
-                metadata={"hnsw:space": "cosine"}, 
+                metadata={"hnsw:space": "cosine"},
             )
-            logger.info(
-                f"Коллекция '{collection_name}' в '{persist_directory}' готова"
-            )
+            logger.info(f"Коллекция '{collection_name}' в '{persist_directory}' готова")
         except Exception as e:
             logger.error(f"Ошибка инициализации ChromaDB: {e}")
             raise
@@ -38,13 +32,6 @@ class ChromaAdapter:
         texts: List[str],
         metadatas: List[Dict[str, Any]],
     ):
-        """
-        Добавляет документы в Chroma.
-        ids - уникальные ID документов
-        vectors - эмбеддинги
-        texts - оригинальные тексты (для RAG выдачи)
-        metadatas - любая дополнительная информация о документе (айдишник пациента)
-        """
         try:
             self.collection.add(
                 ids=ids, embeddings=vectors, metadatas=metadatas, documents=texts
@@ -57,17 +44,11 @@ class ChromaAdapter:
     def query(
         self, query_vector: List[float], k: int = 3, where: Dict[str, Any] = None
     ) -> Dict[str, List]:
-        """
-        Ищет k ближайших документов по вектору
-        Пример фильтра: {"patient_id": "12345", "date": {"$gte": "2024-01-01"}}
-        """
         try:
             result = self.collection.query(
                 query_embeddings=[query_vector], n_results=k, where=where
             )
-            logger.info(
-                f"Запрос выполнен: найдено {len(result['ids'][0])} результатов"
-            )
+            logger.info(f"Запрос выполнен: найдено {len(result['ids'][0])} результатов")
             return result
         except Exception as e:
             logger.error(f"Ошибка запроса в ChromaDB: {e}")
@@ -80,9 +61,6 @@ class ChromaAdapter:
         texts: List[str] = None,
         metadatas: List[Dict[str, Any]] = None,
     ):
-        """
-        Обновляет документы по ID
-        """
         try:
             self.collection.update(
                 ids=ids, embeddings=vectors, documents=texts, metadatas=metadatas
@@ -93,10 +71,6 @@ class ChromaAdapter:
             raise
 
     def delete(self, where: Dict[str, Any] = None):
-        """
-        Удаляет документы по фильтру
-        Пример фильтра: фильтр {"patient_id": "12345"}
-        """
         try:
             self.collection.delete(where=where)
             logger.info("Документы удалены по фильтру")
@@ -105,13 +79,8 @@ class ChromaAdapter:
             raise
 
     def persist(self):
-        """
-        Chroma сама пишет изменения на диск
-        """
         logger.info("Persist вызван, но в PersistentClient ничего не требуется")
         pass
 
-
     def get_count(self) -> int:
-        """Возвращает количество документов в коллекции"""
         return self.collection.count()
