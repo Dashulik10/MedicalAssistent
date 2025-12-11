@@ -86,13 +86,26 @@ class MedicalRecord(BaseModel):
         if v is None:
             return v
 
-        try:
-            datetime.strptime(v, "%Y-%m-%d")
-        except ValueError:
-            return None
-        else:
-            return v
+        # Популярные форматы дат для парсинга
+        date_formats = [
+            "%Y-%m-%d",
+            "%d.%m.%Y",
+            "%d/%m/%Y",
+            "%m/%d/%Y",
+            "%d-%m-%Y",
+            "%Y/%m/%d",
+            "%d.%m.%y",
+            "%d/%m/%y",
+            "%Y.%m.%d",
+        ]
 
+        for date_format in date_formats:
+            try:
+                parsed_date = datetime.strptime(v, date_format)
+                # Преобразуем к единому формату YYYY-MM-DD
+                return parsed_date.strftime("%Y-%m-%d")
+            except ValueError:
+                continue
 
-Medication = TestParameter
-VitalSigns = BloodCountTest
+        # Если ни один формат не подошел, возвращаем None
+        return None
