@@ -1,5 +1,3 @@
-"""FastAPI роутеры для обработки медицинских изображений и генерации отчётов."""
-
 import logging
 import uuid
 from datetime import datetime
@@ -80,7 +78,6 @@ context_builder = ContextBuilder(
 
 
 def validate_image_format(filename: str) -> bool:
-    """Проверяет допустимость формата файла."""
     allowed_extensions = {".jpg", ".jpeg", ".png"}
     ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
     return f".{ext}" in allowed_extensions

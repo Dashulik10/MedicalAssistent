@@ -1,5 +1,3 @@
-"""Pipeline for orchestrating medical data extraction."""
-
 import logging
 from io import BytesIO
 from typing import Any, Union
@@ -15,14 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExtractionPipeline:
-    """
-    Orchestrates the complete medical data extraction pipeline.
-    This pipeline validates images, extracts data using Groq API,
-    and validates the resulting JSON data.
-    """
-
     def __init__(self):
-        """Initialize the pipeline components."""
         self.image_validator = ImageValidator()
         self.extractor = GroqExtractor()
         self.json_validator = JsonValidator()
@@ -31,30 +22,18 @@ class ExtractionPipeline:
     def process(
         self, image: Union[bytes, BytesIO, Image.Image, np.ndarray]
     ) -> dict[str, Any]:
-        """
-        Process a medical document image and extract structured data.
-
-        Args:
-            image: Image as bytes, BytesIO, PIL Image, or numpy ndarray.
-
-        Returns:
-            dict: Result dictionary with keys:
-                - status: "success" or "error"
-                - data: MedicalRecord object if successful, None otherwise
-                - error: Error message if failed, None otherwise
-        """
         logger.info("Processing image...")
 
         try:
-            # Step 1: Validate and prepare image
+            # Шаг 1: Валидация и подготовка изображения
             logger.info("Step 1: Validating image...")
             validated_image_bytes = self.image_validator.validate_image(image)
 
-            # Step 2: Extract data using Groq API
+            # Шаг 2: Извлечение данных с помощью Groq API
             logger.info("Step 2: Extracting data...")
             raw_response = self.extractor.extract(validated_image_bytes)
 
-            # Step 3: Validate and parse JSON
+            # Шаг 3: Валидация и парсинг JSON
             logger.info("Step 3: Validating and parsing JSON...")
             print(raw_response)
             medical_record = self.json_validator.validate_and_parse(raw_response)

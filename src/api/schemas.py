@@ -1,5 +1,3 @@
-"""Pydantic схемы для API запросов и ответов."""
-
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -9,8 +7,6 @@ from pydantic import BaseModel, Field
 
 
 class GenerateReportRequest(BaseModel):
-    """Запрос на генерацию отчёта."""
-
     patient_identifier: str = Field(
         ...,
         description="ID пациента (число) или имя/фамилия для поиска",
@@ -35,8 +31,6 @@ class GenerateReportRequest(BaseModel):
 
 
 class UploadImageResponse(BaseModel):
-    """Ответ на загрузку изображения."""
-
     status: str = Field(..., description="Статус операции: success или error")
     message: str = Field(..., description="Описание результата")
     record_id: Optional[str] = Field(None, description="ID созданной записи в MongoDB")
@@ -47,8 +41,6 @@ class UploadImageResponse(BaseModel):
 
 
 class ExtractedDataResponse(BaseModel):
-    """Детальные данные извлечённые из изображения."""
-
     patient_name: Optional[str] = None
     patient_id: Optional[str] = None
     age: Optional[str] = None
@@ -60,8 +52,6 @@ class ExtractedDataResponse(BaseModel):
 
 
 class UploadImageDetailedResponse(BaseModel):
-    """Расширенный ответ с извлечёнными данными."""
-
     status: str
     message: str
     record_id: Optional[str] = None
@@ -69,16 +59,12 @@ class UploadImageDetailedResponse(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    """Ответ об ошибке."""
-
     status: str = "error"
     message: str
     detail: Optional[str] = None
 
 
 class PatientInfoResponse(BaseModel):
-    """Информация о пациенте."""
-
     id: int
     surname: Optional[str] = None
     firstname: Optional[str] = None
@@ -86,8 +72,6 @@ class PatientInfoResponse(BaseModel):
 
 
 class ReportRecordResponse(BaseModel):
-    """Запись медицинского отчёта."""
-
     id: str
     patient_id: int
     test_type: Optional[str] = None
@@ -99,8 +83,6 @@ class ReportRecordResponse(BaseModel):
 
 
 class QueryPatientRequest(BaseModel):
-    """Запрос на RAG-генерацию ответа по данным пациента."""
-
     patient_identifier: str = Field(
         ...,
         description="ID пациента (число) или имя/фамилия для поиска",
@@ -118,8 +100,6 @@ class QueryPatientRequest(BaseModel):
 
 
 class ContextSourcesResponse(BaseModel):
-    """Информация об источниках данных."""
-
     sqlite_patient: bool = Field(..., description="Использованы ли данные из SQLite")
     mongodb_records_count: int = Field(..., description="Количество записей из MongoDB")
     vector_search_results: int = Field(
@@ -128,8 +108,6 @@ class ContextSourcesResponse(BaseModel):
 
 
 class QueryPatientResponse(BaseModel):
-    """Ответ на RAG-запрос по данным пациента."""
-
     status: str = Field(..., description="Статус: success или error")
     answer: str = Field(..., description="Сгенерированный ответ LLM")
     patient_id: int = Field(..., description="ID пациента")

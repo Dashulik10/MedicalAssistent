@@ -17,6 +17,13 @@ data/
 
 .vscode/
 
+.DS_Store
+
 .python-version
 
 docker-compose.yaml
+
+preprocessing_check.py
+
+ARCHITECTURE.md
+

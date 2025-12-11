@@ -1,6 +1,3 @@
-"""Prompts for medical data extraction."""
-
-
 def get_extraction_prompt(test_type: str = "other") -> str:
     """
     Get the prompt for extracting medical data from document images.
